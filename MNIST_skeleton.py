@@ -16,36 +16,51 @@ train_loader = torch.utils.data.DataLoader(
     batch_size=64, shuffle=True)
 
 
+# TODO: implement squash function
+def squash(input):
+    return input
 
-class Net(nn.Module):
-    def __init__(self):
-        super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
-        self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
-        self.conv2_drop = nn.Dropout2d()
-        self.fc1 = nn.Linear(320, 50)
-        self.fc2 = nn.Linear(50, 10)
-        
+
+conv1_params = {
+    "in_channels": 1,
+    "out_channels": 256,
+    "kernel_size": 9,
+    "stride": 1
+}
+
+conv2_params = {
+    "in_channels": 256,
+    "out_channels": 256,
+    "kernel_size": 9,
+    "stride": 2
+}
+
+
+class PrimaryCapsules(nn.Module):
+    def __init__(self, caps_maps=32, caps_dims=8,
+                 conv1_params, conv2_params):
+        super(PrimaryCapsules, self).__init__()
+        self.caps_maps = caps_maps
+        self.n_caps = caps_maps * 6 * 6
+        self.cap_dims = cap_dims
+        self.conv1 = nn.Conv2d(**conv1_params)
+        self.conv2 = nn.Conv2d(**conv2_params)
+
     def forward(self, x):
-        x = F.relu(F.max_pool2d(self.conv1(x), 2))
-        x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
-        x = x.view(-1, 320)
-        x = F.relu(self.fc1(x))
-        x = F.dropout(x, training=self.training)
-        x = self.fc2(x)
-        return F.log_softmax(x, dim=1)
+        out1 = F.relu(self.conv1(x))
+        print(f"Output size 1: {out1.size()}")
+        out2 = F.relu(self.conv2(out1))
+        print(f"Output size 2: {out2.size()}")
+        out3 = out2.view(x.size(0), -1, self.cap_dims)
+        # Not sure of out3 dims. May be backwards.
+        print(f"Output size 3: {out3.size()}")
+        return squash(out3)
 
-model = Net()
 
-optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
+model = PrimaryCapsules(conv1_params, conv2_params)
 
-for epoch in range(5):
-    for batch_idx, (data, target) in enumerate(train_loader):
-        optimizer.zero_grad()
-        output = model(data)
-        loss = F.nll_loss(output, target)
-        if batch_idx % 50 == 0:
-            print(f'Current loss: {float(loss)}')
-        loss.backward()
-        optimizer.step()
-
+for batch_idx, (data, target) in enumerate(train_loader):
+    test_sample = data[0, :, :, :]
+    print(f"Sample size: {test_sample.size()}")
+    output = model(data)
+    break
