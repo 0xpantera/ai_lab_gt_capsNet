@@ -37,12 +37,11 @@ conv2_params = {
 
 
 class PrimaryCapsules(nn.Module):
-    def __init__(self, caps_maps=32, caps_dims=8,
-                 conv1_params, conv2_params):
+    def __init__(self, conv1_params, conv2_params, caps_maps=32, caps_dims=8):
         super(PrimaryCapsules, self).__init__()
         self.caps_maps = caps_maps
         self.n_caps = caps_maps * 6 * 6
-        self.cap_dims = cap_dims
+        self.cap_dims = caps_dims
         self.conv1 = nn.Conv2d(**conv1_params)
         self.conv2 = nn.Conv2d(**conv2_params)
 
