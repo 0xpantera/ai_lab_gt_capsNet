@@ -37,9 +37,21 @@ conv2_params = {
 
 
 class PrimaryCapsules(nn.Module):
+    """
+    Primary Capsule Network on MNIST.
+    :param conv1_params: Parameters for first Conv2d layer
+    :param conv2_params: Parameters for second Conv2d layer
+    :param caps_maps: number of feature maps (capsules)
+    :param caps_dims: dimension of each capsule's activation vector
+    Shape:
+        - Input: (batch, channels, height, width)
+        - Output: (batch, n_caps, caps_dims)
+    """
     def __init__(self, conv1_params, conv2_params, caps_maps=32, caps_dims=8):
         super(PrimaryCapsules, self).__init__()
         self.caps_maps = caps_maps
+        # Output of conv2 has 256 (32*8) maps of 6x6.
+        # We instead want 32 vectors of 8 dims each.
         self.n_caps = caps_maps * 6 * 6
         self.cap_dims = caps_dims
         self.conv1 = nn.Conv2d(**conv1_params)
@@ -50,7 +62,7 @@ class PrimaryCapsules(nn.Module):
         print(f"Output size 1: {out1.size()}")
         out2 = F.relu(self.conv2(out1))
         print(f"Output size 2: {out2.size()}")
-        out3 = out2.view(x.size(0), -1, self.cap_dims)
+        out3 = out2.view(x.size(0), self.n_caps, self.cap_dims)
         # Not sure of out3 dims. May be backwards.
         print(f"Output size 3: {out3.size()}")
         return squash(out3)
@@ -59,7 +71,7 @@ class PrimaryCapsules(nn.Module):
 model = PrimaryCapsules(conv1_params, conv2_params)
 
 for batch_idx, (data, target) in enumerate(train_loader):
-    test_sample = data[0, :, :, :]
+    test_sample = data
     print(f"Sample size: {test_sample.size()}")
     output = model(data)
     break
