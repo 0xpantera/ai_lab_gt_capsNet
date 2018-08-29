@@ -15,11 +15,14 @@ train_loader = torch.utils.data.DataLoader(
                    ])),
     batch_size=64, shuffle=True)
 
-
-# TODO: implement squash function
 def squash(input):
-    return input
-
+    """
+    Squashing function for a tensor.
+    :param input: torch.Tensor
+    """
+    norm = input.norm()
+    squared_norm = norm.pow(2)
+    return (squared_norm/(1+squared_norm))*(input/norm)
 
 conv1_params = {
     "in_channels": 1,
