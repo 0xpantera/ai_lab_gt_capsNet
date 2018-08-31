@@ -15,14 +15,17 @@ train_loader = torch.utils.data.DataLoader(
                    ])),
     batch_size=64, shuffle=True)
 
+
 def squash(input):
     """
     Squashing function for a tensor.
     :param input: torch.Tensor
     """
+    assert (input.norm() > 0), "Division by zero in second term of equation"
     norm = input.norm()
     squared_norm = norm.pow(2)
     return (squared_norm/(1+squared_norm))*(input/norm)
+
 
 conv1_params = {
     "in_channels": 1,
