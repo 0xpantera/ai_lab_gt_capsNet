@@ -53,28 +53,43 @@ class PrimaryCapsules(nn.Module):
         - Input: (batch, channels, height, width)
         - Output: (batch, n_caps, caps_dims)
     """
-    def __init__(self, conv1_params, conv2_params, caps_maps=32, caps_dims=8):
+    def __init__(self, conv_params, caps_maps=32, caps_dims=8):
         super(PrimaryCapsules, self).__init__()
         self.caps_maps = caps_maps
         # Output of conv2 has 256 (32*8) maps of 6x6.
         # We instead want 32 vectors of 8 dims each.
         self.n_caps = caps_maps * 6 * 6
         self.cap_dims = caps_dims
-        self.conv1 = nn.Conv2d(**conv1_params)
-        self.conv2 = nn.Conv2d(**conv2_params)
+        
+        self.capsules = nn.ModuleList([
+            nn.Conv2d(**conv_params) for _ in range(self.caps_maps)
+        ])
 
     def forward(self, x):
-        out1 = F.relu(self.conv1(x))
-        print(f"Output size 1: {out1.size()}")
-        out2 = F.relu(self.conv2(out1))
-        print(f"Output size 2: {out2.size()}")
-        out3 = out2.view(x.size(0), self.n_caps, self.cap_dims)
+        output = [capsule(x) for capsule in self.capsules]
+        output = torch.cat(output)
+        print(f"PrimaryCaps: Output size 1: {output.size()}")
+        output = output.view(x.size(0), self.caps_maps, self.n_caps, self.cap_dims)
         # Not sure of out3 dims. May be backwards.
-        print(f"Output size 3: {out3.size()}")
-        return squash(out3)
+        print(f"PrimaryCaps: Output size 2: {output.size()}")
+        return squash(output)
 
+class CapsNet(nn.Module):
 
-model = PrimaryCapsules(conv1_params, conv2_params)
+    def __init__(self, conv1_params, conv2_params):
+        super(CapsNet, self).__init__()
+        self.conv1 = nn.Conv2d(**conv1_params)
+        self.primary_capsules = PrimaryCapsules(conv2_params)
+
+    def forward(self, x):
+        print(f"CapsNet input size", x.size())
+        output = self.conv1(x)
+        print(f"CapsNet conv1 size", output.size())
+        output = self.primary_capsules(output)
+        print(f"CapsNet PrimaryCaps size", output.size())
+        return output
+
+model = CapsNet(conv1_params, conv2_params)
 
 for batch_idx, (data, target) in enumerate(train_loader):
     test_sample = data

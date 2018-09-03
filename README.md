@@ -5,6 +5,6 @@ Based on the paper [Dynamic Routing Between Capsules](https://arxiv.org/pdf/1710
 ### Conda Environment
 To reproduce the results install the conda environment from the `spec-file.txt.` by running:
 
-`conda install --name myenv --file spec-file.txt`
+`conda install --name capsnet --file spec-file.txt`
 
 [^1]: Sara Sabour, Nicholas Frosst, Geoffrey E Hinton
