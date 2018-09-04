@@ -38,8 +38,7 @@ conv2_params = {
     "in_channels": 256,
     "out_channels": 32,
     "kernel_size": 9,
-    "stride": 2,
-    "padding": 0
+    "stride": 2
 }
 
 
@@ -75,6 +74,7 @@ class PrimaryCapsules(nn.Module):
         print(f"PrimaryCaps: Output size 2: {output.size()}")
         return squash(output)
 
+
 class CapsNet(nn.Module):
 
     def __init__(self, conv1_params, conv2_params):
@@ -89,6 +89,7 @@ class CapsNet(nn.Module):
         output = self.primary_capsules(output)
         print(f"CapsNet PrimaryCaps size", output.size())
         return output
+
 
 model = CapsNet(conv1_params, conv2_params)
 
