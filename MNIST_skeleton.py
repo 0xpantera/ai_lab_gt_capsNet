@@ -36,9 +36,10 @@ conv1_params = {
 
 conv2_params = {
     "in_channels": 256,
-    "out_channels": 256,
+    "out_channels": 32,
     "kernel_size": 9,
-    "stride": 2
+    "stride": 2,
+    "padding": 0
 }
 
 
@@ -59,17 +60,17 @@ class PrimaryCapsules(nn.Module):
         # Output of conv2 has 256 (32*8) maps of 6x6.
         # We instead want 32 vectors of 8 dims each.
         self.n_caps = caps_maps * 6 * 6
-        self.cap_dims = caps_dims
+        self.caps_dims = caps_dims
         
         self.capsules = nn.ModuleList([
-            nn.Conv2d(**conv_params) for _ in range(self.caps_maps)
+            nn.Conv2d(**conv_params) for _ in range(self.caps_dims)
         ])
 
     def forward(self, x):
         output = [capsule(x) for capsule in self.capsules]
         output = torch.cat(output)
         print(f"PrimaryCaps: Output size 1: {output.size()}")
-        output = output.view(x.size(0), self.caps_maps, self.n_caps, self.cap_dims)
+        output = output.view(x.size(0), -1, self.caps_dims)
         # Not sure of out3 dims. May be backwards.
         print(f"PrimaryCaps: Output size 2: {output.size()}")
         return squash(output)
