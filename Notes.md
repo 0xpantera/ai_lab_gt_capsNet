@@ -18,3 +18,6 @@
     - (1152, 10) is number of primary capsules in the lower level, each one is connected to the 10 digit capsules, and must sum to 1. Each on of the 1152 has to have a weight of agreement with each one of the 10 digit caps. 
     - (16, 8) This is useful for the transformation matrix, we'll need to map the initial (8) dimensional vectors to (16). #TODO. This one needs more refinement. 
 - `torch.matmul` when the tensors have more than 2 dimensions, it uses the last two dimensions to do the matrix multiplication, the other dimensions are done like batching. That is, they are just "broadcast".
+
+
+### Comparing CapsNet

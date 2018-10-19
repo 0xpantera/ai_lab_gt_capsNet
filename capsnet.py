@@ -4,7 +4,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
 from torchvision import datasets, transforms
-from tensorboardX import SummaryWriter
+# from tensorboardX import SummaryWriter
+from tqdm import *
 
 torch.manual_seed(4242)
 
@@ -125,13 +126,13 @@ class CapsNet(nn.Module):
         self.digit_capsules = DigitCapsule(num_route_nodes=32*6*6, in_channels=8, out_channels=16, num_iterations=3)
 
     def forward(self, x):
-        print(f"CapsNet input size", x.size())
+#        print(f"CapsNet input size", x.size())
         x = F.relu(self.conv(x))
-        print(f"CapsNet conv1 size", x.size())
+#        print(f"CapsNet conv1 size", x.size())
         u = self.primary_capsules(x)
-        print(f"CapsNet PrimaryCaps size", u.size())
+#        print(f"CapsNet PrimaryCaps size", u.size())
         v = self.digit_capsules(u)
-        print(f"CapsNet DigitCaps size", v.size())
+#        print(f"CapsNet DigitCaps size", v.size())
         return v
 
 def loss(v, target, batch_size):
@@ -152,18 +153,18 @@ def train(model, epochs=100):
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
     model.train()
-    writer = SummaryWriter()
     for epoch in range(epochs):
         for batch_idx, (data, target) in enumerate(train_loader):
             test_sample = data
             batch_size = test_sample.size()[0]
-            print(f"Sample size: {test_sample.size()}")
+            # print(f"Sample size: {test_sample.size()}")
             output = model(data)
             L = loss(output, target, batch_size)
             L.backward()
 
             step = batch_idx + epoch
-            writer.add_scalar('train/loss', L.data[0], step)
+            if epoch % 10 == 0:
+                tqdm.write(f'Epoch: {step.item()}    Loss: {L.data.item()}')
 
             optimizer.step()
 
