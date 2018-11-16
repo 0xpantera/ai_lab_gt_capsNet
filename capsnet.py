@@ -44,7 +44,6 @@ conv2_params = {
     "stride": 2
 }
 
-
 class PrimaryCapsules(nn.Module):
     """
     Primary Capsule Network on MNIST.
@@ -145,10 +144,6 @@ def loss(v, target, batch_size):
     L = T * torch.max(zeros, m - norm) ** 2 + l * (1 -T) * torch.max(zeros, norm - (1. - m)) ** 2
     return torch.sum(L) / batch_size
 
-# NOTE. What parameters would we like to experiment with?
-# num of capsules in PrimaryCaps? Capsule Dimensions? Conv params?
-model = CapsNet(conv1_params, conv2_params)
-
 def train(model, epochs=100):
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
@@ -164,7 +159,12 @@ def train(model, epochs=100):
 
             step = batch_idx + epoch
             if epoch % 10 == 0:
-                tqdm.write(f'Epoch: {step.item()}    Loss: {L.data.item()}')
+                tqdm.write(f'Epoch: {step}    Loss: {L.data.item()}')
 
             optimizer.step()
 
+
+# NOTE. What parameters would we like to experiment with?
+# num of capsules in PrimaryCaps? Capsule Dimensions? Conv params?
+model = CapsNet(conv1_params, conv2_params)
+train(model, epochs=100)
