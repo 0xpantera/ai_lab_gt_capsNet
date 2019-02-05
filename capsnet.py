@@ -7,18 +7,6 @@ from torchvision import datasets, transforms
 # from tensorboardX import SummaryWriter
 from tqdm import *
 
-torch.manual_seed(4242)
-
-data_dir = "./data/"
-train_loader = torch.utils.data.DataLoader(
-    datasets.MNIST(data_dir, train=True, download=True,
-                   transform=transforms.Compose([
-                       transforms.ToTensor(),
-                       transforms.Normalize((0.1307,), (0.30801,))
-                   ])),
-    batch_size=64, shuffle=True)
-
-
 def squash(input):
     """
     Squashing function for a tensor.
@@ -124,17 +112,30 @@ class CapsNet(nn.Module):
         self.primary_capsules = PrimaryCapsules(conv2_params, caps_dims=8)
         self.digit_capsules = DigitCapsule(num_route_nodes=32*6*6, in_channels=8, out_channels=16, num_iterations=3)
 
-    def forward(self, x):
-#        print(f"CapsNet input size", x.size())
-        x = F.relu(self.conv(x))
-#        print(f"CapsNet conv1 size", x.size())
-        u = self.primary_capsules(x)
-#        print(f"CapsNet PrimaryCaps size", u.size())
-        v = self.digit_capsules(u)
-#        print(f"CapsNet DigitCaps size", v.size())
-        return v
+        self.decoder = nn.Sequential(
+            nn.Linear(16 * 10, 512),
+            nn.ReLU(inplace=True),
+            nn.Linear(512, 1024),
+            nn.ReLU(inplace=True),
+            nn.Linear(1024, 784),
+            nn.Sigmoid()
+        ) 
 
-def loss(v, target, batch_size):
+    def forward(self, x):
+        x = F.relu(self.conv(x))
+        u = self.primary_capsules(x)
+        v = self.digit_capsules(u)
+        print('V size', v.size())
+        reconstruction = self.decoder(v)
+        print('reconstruction size', reconstruction.size())
+        return v, reconstruction
+
+
+def reconstruction_loss(v, target, image):
+
+    pass
+
+def margin_loss(v, target, batch_size):
     l = 0.5
     m = 0.9
     T = target.type(torch.FloatTensor)
@@ -144,8 +145,32 @@ def loss(v, target, batch_size):
     L = T * torch.max(zeros, m - norm) ** 2 + l * (1 -T) * torch.max(zeros, norm - (1. - m)) ** 2
     return torch.sum(L) / batch_size
 
-def train(model, epochs=100):
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+def train(model, epochs=100, dataset='mnist', lr=0.001):
+
+    torch.manual_seed(42)
+
+    data_dir = "./data/"
+
+    if dataset == 'mnist':
+        train_loader = torch.utils.data.DataLoader(
+            datasets.MNIST(data_dir, train=True, download=True,
+                        transform=transforms.Compose([
+                            transforms.ToTensor(),
+                            transforms.Normalize((0.1307,), (0.30801,))
+                        ])),
+            batch_size=64, shuffle=True)
+    elif dataset == 'fashion-mnist':
+        train_loader = torch.utils.data.DataLoader(
+            datasets.FashionMNIST(data_dir, train=True, download=True,
+                        transform=transforms.Compose([
+                            transforms.ToTensor(),
+                            transforms.Normalize((0.1307,), (0.30801,))
+                        ])),
+            batch_size=64, shuffle=True)
+    else:
+        print('Only accepts mnist | fashion-mnist')
+    
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     model.train()
     for epoch in range(epochs):
@@ -153,7 +178,7 @@ def train(model, epochs=100):
             test_sample = data
             batch_size = test_sample.size()[0]
             # print(f"Sample size: {test_sample.size()}")
-            output = model(data)
+            output, reconstruction = model(data)
             L = loss(output, target, batch_size)
             L.backward()
 
@@ -167,4 +192,4 @@ def train(model, epochs=100):
 # NOTE. What parameters would we like to experiment with?
 # num of capsules in PrimaryCaps? Capsule Dimensions? Conv params?
 model = CapsNet(conv1_params, conv2_params)
-train(model, epochs=100)
+train(model)
